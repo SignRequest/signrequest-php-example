@@ -1,0 +1,7 @@
+{
+    "name": "SignRequest php example",
+    "description": "SignRequest php example",
+    "require": {
+      "signrequest/signrequest-client": "1.3.0"
+    }
+}
