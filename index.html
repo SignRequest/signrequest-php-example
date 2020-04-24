@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>SignRequest PHP example</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.0.0/styles/default.min.css" crossorigin="anonymous">
+
+    <style>
+        body {
+            align-items: center;
+            padding-top: 40px;
+            padding-bottom: 40px;
+            background-color: #f5f5f5;
+        }
+        #response {
+            padding: 15px;
+            font-size: 0.8em;
+        }
+        .form-signin .checkbox {
+            font-weight: 400;
+        }
+        .form-signin .form-control {
+            position: relative;
+            box-sizing: border-box;
+            height: auto;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .form-signin .form-control:focus {
+            z-index: 2;
+        }
+        .form-signin #from_email {
+            margin-bottom: -1px;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+        .form-signin #signer_email {
+            margin-bottom: 10px;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+        .form-signin button {
+            margin-top: 10px;
+        }
+        .loading {
+            display: none;
+        }
+        .hljs {
+            background: #fff;
+        }
+        .hljs a {
+            color: #800;
+            text-decoration: underline;
+            background-color: transparent;
+        }
+        .hljs a:hover, .hljs a:hover .hljs-string  {
+            color: #007bff;
+        }
+    </style>
+
+</head>
+<body >
+
+<div class="container">
+    <div class="row justify-content-md-center">
+        <div class="col col-lg-4">
+            <form id="sr_form" class="form-signin text-center">
+                <img class="mb-4" src="/assets/logo_icon.svg" alt="" width="72" height="72">
+                <h1 class="h3 mb-3 font-weight-normal">Create a SignRequest</h1>
+                <label for="from_email" class="sr-only">Your email address</label>
+                <input type="email" name="from_email" id="from_email" class="form-control" placeholder="Your email address" required autofocus>
+                <label for="signer_email" class="sr-only">Signer email address</label>
+                <input type="email" name="signer_email" id="signer_email" class="form-control" placeholder="Signer email address" required autofocus>
+                <!--    <div class="checkbox mb-3">-->
+                <!--        <label>-->
+                <!--            <input type="checkbox" value="remember-me"> Remember me-->
+                <!--        </label>-->
+                <!--    </div>-->
+                <button data-loading-text="<i class='fa fa-spinner fa-spin'></i> Loading"
+                        id="submit_form" class="btn btn-lg btn-primary btn-block" type="submit">
+        <span class="not-loading">
+            Create SignRequest
+        </span>
+                    <span class="loading">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Loading...
+        </span>
+                </button>
+                <p class="mt-5 mb-3 text-muted">SignRequest <a href="https://signrequest.com/api/v1/docs/">API Docs</a></p>
+            </form>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col col-lg-12">
+            <pre id="response" class="not-loading card" style="display: none">
+                <code class="json"></code>
+            </pre>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.5.0.min.js" integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.0.0/highlight.min.js" crossorigin="anonymous"></script>
+<script>
+  var linkify = function(text) {
+    // http://, https://, ftp://
+    var urlPattern = /\b(?:https?|ftp):\/\/[a-z0-9-+&@#\/%?=~_|!:,.;]*[a-z0-9-+&@#\/%=~_|]/gim;
+    return text
+      .replace(urlPattern, '<a href="$&">$&</a>');
+  };
+  $(document).ready(function() {
+    var form = $('#sr_form');
+    var response = $('#response');
+    var responseCode = $('#response code');
+
+    var notLoadingElements = $('.not-loading');
+    var loadingElements = $('.loading');
+    loadingElements.hide();
+    var loading = false;
+    var setLoading = function () {
+      loading = true;
+      notLoadingElements.hide();
+      loadingElements.show();
+      var unsetCalled = false;
+      var unsetLoading = function () {
+        unsetCalled = true;
+        loading = false;
+        notLoadingElements.show();
+        loadingElements.hide();
+      };
+      setTimeout(function () {
+        if (!unsetCalled){unsetLoading();}
+      }, 10000);
+      return unsetLoading;
+    };
+
+    var setResponse = function (data) {
+      var dataStr = JSON.stringify(data, undefined, 4);
+      responseCode.html(linkify(dataStr));
+      responseCode.each(function(i, e) {
+        hljs.highlightBlock(e)
+      });
+      response.show();
+    };
+
+    $('#sr_form').on('submit', function (event) {
+      event.preventDefault();
+      if (loading){return ;}
+      var unsetLoading = setLoading();
+      var formData = form.serialize();
+      console.info('sending =>', formData);
+      $.ajax({
+        url: '/quickcreate.php', // url where to submit the request
+        type : "POST", // type of action POST || GET
+        // dataType : 'json', // data type
+        data : formData, // post data || get data
+        success : function(result) {
+          // you can see the result from the console
+          // tab of the developer tools
+          console.info('received =>', result);
+          setResponse(result);
+          unsetLoading();
+        },
+        error: function(xhr, resp, text) {
+          console.error(xhr, resp, text);
+          setResponse(resp);
+          unsetLoading();
+        }
+      });
+      return false;
+    });
+  });
+</script>
+</body>
+</html>

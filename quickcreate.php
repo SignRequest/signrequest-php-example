@@ -8,14 +8,44 @@
 
 require_once(__DIR__ . '/vendor/autoload.php');
 
+function isCli(){
+    return php_sapi_name() == "cli";
+}
+
+function returnResult($result){
+    if (isCli()){
+        print_r($result);
+    } else {
+        header("Content-type: application/json; charset=utf-8");
+        if (is_string($result)){
+            $data = array('message' => $result);
+        } else {
+            $data = $result."";  // this serializes the swagger codegen object to json
+        }
+        echo $data;
+    }
+    exit;
+}
+
 $token = getenv('SR_API_TOKEN');
 if (empty($token)){
-    throw new Exception('SR_API_TOKEN environment variable is not set. use as: SR_API_TOKEN=your_token php quickcreate.php');
+    returnResult('SR_API_TOKEN environment variable is not set. use as:\n SR_API_TOKEN=your_token php quickcreate.php');
 }
-$from_email = $argv[1];
-$signer_email = $argv[2];
-if (empty($from_email) || empty($signer_email)){
-    throw new Exception('Signer emails not set, use as: php quickcreate.php from_signer_email@example.com to_signer_email@example.com');
+
+if (isCli()) {
+    // In cli-mode
+    $from_email = $argv[1];
+    $signer_email = $argv[2];
+    if (empty($from_email) || empty($signer_email)){
+        returnResult('Signer emails not set, use as:\n php quickcreate.php from_signer_email@example.com to_signer_email@example.com');
+    }
+} else {
+    // Not in cli-mode
+    $from_email =  isset($_POST["from_email"]) ? $_POST["from_email"] : null;
+    $signer_email =  isset($_POST["signer_email"]) ? $_POST["signer_email"] : null;
+    if (empty($from_email) || empty($signer_email)){
+        returnResult("from_email and signer_email not given!");
+    }
 }
 
 // Configure API key authorization: Token
@@ -58,9 +88,7 @@ $data->setFromEmail($from_email);
 
 try {
     $result = $apiInstance->signrequestQuickCreateCreate($data);
-    print_r($result);
+    returnResult($result);
 } catch (Exception $e) {
     echo 'Exception when calling SignrequestQuickCreateApi->signrequestQuickCreateCreate: ', $e->getMessage(), PHP_EOL;
 }
-
-?>

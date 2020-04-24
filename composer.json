@@ -1,7 +1,8 @@
 {
-    "name": "SignRequest php example",
+    "name": "signrequest-php-example",
     "description": "SignRequest php example",
     "require": {
-      "signrequest/signrequest-client": "1.3.0"
+      "signrequest/signrequest-client": "1.3.0",
+      "ext-json": "*"
     }
 }
